@@ -1,4 +1,5 @@
-#pragma once
+#ifndef LOGGING_HPP
+#define LOGGING_HPP
 
 #include <atomic>
 #include <chrono>
@@ -267,3 +268,5 @@ inline Level get_level() {
 #endif
 
 } // namespace logging
+
+#endif // LOGGING_HPP
