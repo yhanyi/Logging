@@ -1,5 +1,6 @@
 #include "logger.hpp"
 #include <chrono>
+#include <future>
 #include <random>
 #include <thread>
 #include <vector>
@@ -169,6 +170,77 @@ void test2() {
            ", Total consumed: ", items_consumed.load());
 }
 
+// Test 3: Parallel task processing test
+void test3() {
+  LOG_INFO("=== Parallel Task Processing Test ===");
+
+  constexpr int num_tasks = 20;
+
+  // Simulate different types of tasks
+  auto cpu_intensive_task = [](int task_id) -> double {
+    LOG_DEBUG("Starting CPU-intensive task ", task_id);
+
+    double result = 0.0;
+    for (int i = 0; i < 1000000; ++i) {
+      result += std::sin(i) * std::cos(i);
+    }
+
+    LOG_DEBUG("Completed CPU-intensive task ", task_id, " with result ",
+              result);
+    return result;
+  };
+
+  auto io_simulation_task = [](int task_id) -> std::string {
+    LOG_DEBUG("Starting I/O simulation task ", task_id);
+
+    // Simulate I/O delay
+    std::this_thread::sleep_for(
+        std::chrono::milliseconds(100 + (task_id % 50)));
+
+    std::stringstream result;
+    result << "data_from_task_" << task_id;
+
+    LOG_DEBUG("Completed I/O simulation task ", task_id);
+    return result.str();
+  };
+
+  std::vector<std::future<double>> cpu_futures;
+  std::vector<std::future<std::string>> io_futures;
+
+  // Launch CPU-intensive tasks
+  for (int i = 0; i < num_tasks / 2; ++i) {
+    cpu_futures.push_back(
+        std::async(std::launch::async, cpu_intensive_task, i));
+    LOG_TRACE("Launched CPU task ", i);
+  }
+
+  // Launch I/O simulation tasks
+  for (int i = num_tasks / 2; i < num_tasks; ++i) {
+    io_futures.push_back(std::async(std::launch::async, io_simulation_task, i));
+    LOG_TRACE("Launched I/O task ", i);
+  }
+
+  // Collect results
+  double total_cpu_result = 0.0;
+  for (int i = 0; i < cpu_futures.size(); ++i) {
+    double result = cpu_futures[i].get();
+    total_cpu_result += result;
+    LOG_INFO("CPU task ", i, " completed with result: ", result);
+  }
+
+  std::vector<std::string> io_results;
+  for (int i = 0; i < io_futures.size(); ++i) {
+    std::string result = io_futures[i].get();
+    io_results.push_back(result);
+    LOG_INFO("I/O task ", i + num_tasks / 2,
+             " completed with result: ", result);
+  }
+
+  LOG_INFO("All parallel tasks completed");
+  LOG_INFO("Total CPU result: ", total_cpu_result);
+  LOG_INFO("Total I/O results collected: ", io_results.size());
+}
+
 int main() {
   // Configure logger
   logging::set_level(logging::Level::TRACE);
@@ -179,8 +251,10 @@ int main() {
   LOG_INFO("Starting comprehensive multithreading tests...");
 
   try {
-    // test1();
-    test2();
+    // test1(); // Test 1: Basic multithreading stress test
+    // test2(); // Test 2: Producer consumer test
+    test3(); // Test 3: Parallel task processing test
+
     std::this_thread::sleep_for(std::chrono::seconds(1));
 
   } catch (const std::exception &e) {
