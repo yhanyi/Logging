@@ -1,5 +1,5 @@
-#ifndef LOGGING_HPP
-#define LOGGING_HPP
+#ifndef LOGGER_HPP
+#define LOGGER_HPP
 
 #include <atomic>
 #include <chrono>
@@ -12,7 +12,7 @@
 
 namespace logging {
 
-enum class Level : int {
+enum class Level : std::uint8_t {
   TRACE = 0,
   DEBUG = 1,
   INFO = 2,
@@ -89,6 +89,7 @@ public:
   std::stringstream &get() {
     stream_.clear();
     stream_.str("");
+    return stream_;
   }
 
 private:
@@ -269,4 +270,4 @@ inline Level get_level() {
 
 } // namespace logging
 
-#endif // LOGGING_HPP
+#endif // LOGGER_HPP
