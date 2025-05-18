@@ -241,6 +241,119 @@ void test3() {
   LOG_INFO("Total I/O results collected: ", io_results.size());
 }
 
+// Test 4: Thread pool simulation with error handling
+void test4() {
+  LOG_INFO("=== Thread Pool Simulation Test ===");
+
+  constexpr int pool_size = 6;
+  constexpr int total_jobs = 50;
+
+  std::queue<std::function<void()>> job_queue;
+  std::mutex queue_mutex;
+  std::condition_variable cv;
+  std::atomic<bool> shutdown{false};
+  std::atomic<int> completed_jobs{0};
+
+  // Worker thread function
+  auto worker = [&](int worker_id) {
+    LOG_INFO("Worker ", worker_id, " started");
+
+    while (true) {
+      std::function<void()> job;
+
+      {
+        std::unique_lock<std::mutex> lock(queue_mutex);
+        cv.wait(lock, [&] { return !job_queue.empty() || shutdown.load(); });
+
+        if (shutdown.load() && job_queue.empty()) {
+          break;
+        }
+
+        if (!job_queue.empty()) {
+          job = std::move(job_queue.front());
+          job_queue.pop();
+        }
+      }
+
+      if (job) {
+        try {
+          LOG_TRACE("Worker ", worker_id, " executing job");
+          job();
+          completed_jobs.fetch_add(1);
+          LOG_TRACE("Worker ", worker_id, " completed job successfully");
+        } catch (const std::exception &e) {
+          LOG_ERROR("Worker ", worker_id,
+                    " job failed with exception: ", e.what());
+        } catch (...) {
+          LOG_ERROR("Worker ", worker_id, " job failed with unknown exception");
+        }
+      }
+    }
+
+    LOG_INFO("Worker ", worker_id, " shutting down");
+  };
+
+  // Start worker threads
+  std::vector<std::thread> workers;
+  for (int i = 0; i < pool_size; ++i) {
+    workers.emplace_back(worker, i);
+  }
+
+  // Generate jobs
+  std::random_device rd;
+  std::mt19937 gen(rd());
+  std::uniform_int_distribution<> dis(1, 100);
+
+  for (int i = 0; i < total_jobs; ++i) {
+    auto job = [i, &dis, &gen]() {
+      int work_time = dis(gen);
+      LOG_DEBUG("Executing job ", i, " (estimated ", work_time, "ms)");
+
+      // Simulate work
+      std::this_thread::sleep_for(std::chrono::milliseconds(work_time));
+
+      // Simulate occasional failures
+      if (work_time > 90) {
+        throw std::runtime_error("Simulated job failure");
+      }
+
+      LOG_DEBUG("Job ", i, " completed successfully");
+    };
+
+    {
+      std::lock_guard<std::mutex> lock(queue_mutex);
+      job_queue.push(std::move(job));
+    }
+    cv.notify_one();
+
+    LOG_TRACE("Submitted job ", i);
+
+    // Small delay between job submissions
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+  }
+
+  LOG_INFO("All jobs submitted, waiting for completion");
+
+  // Wait for all jobs to complete
+  while (completed_jobs.load() < total_jobs) {
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    LOG_DEBUG("Progress: ", completed_jobs.load(), "/", total_jobs,
+              " jobs completed");
+  }
+
+  // Shutdown workers
+  shutdown.store(true);
+  cv.notify_all();
+
+  for (auto &worker : workers) {
+    worker.join();
+  }
+
+  LOG_INFO("Thread pool simulation completed");
+  LOG_INFO("Final stats: ", completed_jobs.load(), "/", total_jobs,
+           " jobs completed successfully");
+}
+
 int main() {
   // Configure logger
   logging::set_level(logging::Level::TRACE);
@@ -253,7 +366,8 @@ int main() {
   try {
     // test1(); // Test 1: Basic multithreading stress test
     // test2(); // Test 2: Producer consumer test
-    test3(); // Test 3: Parallel task processing test
+    // test3(); // Test 3: Parallel task processing test
+    test4(); // Test 4: Thread pool simulation with error handling
 
     std::this_thread::sleep_for(std::chrono::seconds(1));
 
