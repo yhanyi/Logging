@@ -203,4 +203,54 @@ inline Level get_level() {
       std::memory_order_relaxed);
 }
 
+// Conditional logging macros that avoid argument evaluation when disabled
+
+#define LOG_TRACE(...)                                                         \
+  do {                                                                         \
+    if (::logging::detail::is_level_enabled(::logging::Level::TRACE)) {        \
+      ::logging::detail::log_impl(::logging::Level::TRACE, __FILE__, __LINE__, \
+                                  __VA_ARGS__);                                \
+    }                                                                          \
+  } while (0)
+
+#define LOG_DEBUG(...)                                                         \
+  do {                                                                         \
+    if (::logging::detail::is_level_enabled(::logging::Level::DEBUG)) {        \
+      ::logging::detail::log_impl(::logging::Level::DEBUG, __FILE__, __LINE__, \
+                                  __VA_ARGS__);                                \
+    }                                                                          \
+  } while (0)
+
+#define LOG_INFO(...)                                                          \
+  do {                                                                         \
+    if (::logging::detail::is_level_enabled(::logging::Level::INFO)) {         \
+      ::logging::detail::log_impl(::logging::Level::INFO, __FILE__, __LINE__,  \
+                                  __VA_ARGS__);                                \
+    }                                                                          \
+  } while (0)
+
+#define LOG_WARN(...)                                                          \
+  do {                                                                         \
+    if (::logging::detail::is_level_enabled(::logging::Level::WARN)) {         \
+      ::logging::detail::log_impl(::logging::Level::WARN, __FILE__, __LINE__,  \
+                                  __VA_ARGS__);                                \
+    }                                                                          \
+  } while (0)
+
+#define LOG_ERROR(...)                                                         \
+  do {                                                                         \
+    if (::logging::detail::is_level_enabled(::logging::Level::ERROR)) {        \
+      ::logging::detail::log_impl(::logging::Level::ERROR, __FILE__, __LINE__, \
+                                  __VA_ARGS__);                                \
+    }                                                                          \
+  } while (0)
+
+#define LOG_FATAL(...)                                                         \
+  do {                                                                         \
+    if (::logging::detail::is_level_enabled(::logging::Level::FATAL)) {        \
+      ::logging::detail::log_impl(::logging::Level::FATAL, __FILE__, __LINE__, \
+                                  __VA_ARGS__);                                \
+    }                                                                          \
+  } while (0)
+
 } // namespace logging
