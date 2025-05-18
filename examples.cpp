@@ -241,7 +241,7 @@ void test3() {
   LOG_INFO("Total I/O results collected: ", io_results.size());
 }
 
-// Test 4: Thread pool simulation with error handling
+// Test 4: Thread pool simulation with error handling test
 void test4() {
   LOG_INFO("=== Thread Pool Simulation Test ===");
 
@@ -354,6 +354,63 @@ void test4() {
            " jobs completed successfully");
 }
 
+// Test 5: Rapid logging test
+void test5() {
+  LOG_INFO("=== Rapid Logging Stress Test ===");
+
+  constexpr int num_threads = 12;
+  constexpr int logs_per_thread = 10000;
+
+  std::atomic<int> total_logs{0};
+
+  auto rapid_logger = [&](int thread_id) {
+    for (int i = 0; i < logs_per_thread; ++i) {
+      // Mix different log levels
+      switch (i % 6) {
+      case 0:
+        LOG_TRACE("Trace from thread ", thread_id, " iteration ", i);
+        break;
+      case 1:
+        LOG_DEBUG("Debug from thread ", thread_id, " iteration ", i);
+        break;
+      case 2:
+        LOG_INFO("Info from thread ", thread_id, " iteration ", i);
+        break;
+      case 3:
+        LOG_WARN("Warning from thread ", thread_id, " iteration ", i);
+        break;
+      case 4:
+        LOG_ERROR("Error from thread ", thread_id, " iteration ", i);
+        break;
+      case 5:
+        LOG_FATAL("Fatal from thread ", thread_id, " iteration ", i);
+        break;
+      }
+      total_logs.fetch_add(1);
+    }
+  };
+
+  auto start = std::chrono::high_resolution_clock::now();
+
+  std::vector<std::thread> threads;
+  for (int i = 0; i < num_threads; ++i) {
+    threads.emplace_back(rapid_logger, i);
+  }
+
+  for (auto &t : threads) {
+    t.join();
+  }
+
+  auto end = std::chrono::high_resolution_clock::now();
+  auto duration =
+      std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+
+  LOG_INFO("Stress test completed");
+  LOG_INFO("Total logs: ", total_logs.load());
+  LOG_INFO("Duration: ", duration.count(), "ms");
+  LOG_INFO("Logs per second: ", (total_logs.load() * 1000) / duration.count());
+}
+
 int main() {
   // Configure logger
   logging::set_level(logging::Level::TRACE);
@@ -364,10 +421,11 @@ int main() {
   LOG_INFO("Starting comprehensive multithreading tests...");
 
   try {
-    // test1(); // Test 1: Basic multithreading stress test
-    // test2(); // Test 2: Producer consumer test
-    // test3(); // Test 3: Parallel task processing test
-    test4(); // Test 4: Thread pool simulation with error handling
+    test1(); // Test 1: Basic multithreading stress test
+    test2(); // Test 2: Producer consumer test
+    test3(); // Test 3: Parallel task processing test
+    test4(); // Test 4: Thread pool simulation with error handling test
+    test5(); // Test 5: Rapid logging test
 
     std::this_thread::sleep_for(std::chrono::seconds(1));
 
