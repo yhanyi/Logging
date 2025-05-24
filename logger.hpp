@@ -265,7 +265,7 @@ inline Level get_level() {
   } while (0)
 #else
 #define LOG_TRACE_RELEASE(...) LOG_TRACE(__VA_ARGS__)
-#define LOG_DEBUG_RELEASE(...) LOG_TRACE(__VA_ARGS__)
+#define LOG_DEBUG_RELEASE(...) LOG_DEBUG(__VA_ARGS__)
 #endif
 
 } // namespace logging
